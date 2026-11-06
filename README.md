@@ -43,7 +43,7 @@ qualidade, build e instalação do wheel em ambiente isolado.
 - Template [python-project-template](https://github.com/campos-labs/python-project-template),
   referência gerada `251fdadf2368c3748e47c39b58f7fceda95a5c30`.
 - POC, spike, fixtures e evidências permanecem no
-  [project-hub](https://github.com/campos-labs/project-hub/tree/main/docs/rfcs/006-contract-analyser-enterprise/research).
+  [project-hub](https://github.com/campos-labs/project-hub/tree/6c301455fce7a182a044ea5f44bba88e8f6731c2/docs/rfcs/006-contract-analyser-enterprise/research).
   Fixtures serão promovidas seletivamente junto aos primeiros consumidores e
   testes; os scripts experimentais não são a aplicação.
 
