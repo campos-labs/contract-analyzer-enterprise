@@ -1,0 +1,5 @@
+services:
+  bootstrap:
+    build: .
+    command: ["contract-analyzer", "--version"]
+    network_mode: none

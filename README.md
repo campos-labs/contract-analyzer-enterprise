@@ -1,42 +1,55 @@
-# Python Project Template
+# Contract Analyzer Enterprise
 
-Template base para iniciar projetos Python da organização **Campos Lab** com uma configuração mínima, padronizada e pronta para evolução.
+Base do produto para revisão rastreável de contratos B2B. A arquitetura da
+v1.0 está em [DESIGN.md](DESIGN.md); o motor de revisão ainda será implementado.
 
-## Visão geral
+## Disponível
 
-Este repositório serve como base para novos projetos Python e inclui:
+Pacote instalável, CLI de identificação/ajuda, ferramentas de qualidade e imagem
+Docker para verificar o empacotamento. Não há API, portal, análise DOCX, Writer,
+fila ou chamadas ao LLM implementados neste bootstrap. `0.0.0` identifica esta
+base de desenvolvimento; não existe release ou protótipo publicado.
 
-- estrutura simples de aplicação
-- gerenciamento do projeto com `pyproject.toml`
-- testes automatizados com `pytest`
-- lint e formatação com `ruff`
-- automação de tarefas com `taskipy`
-- containerização com `Docker`
-- arquivo `docker-compose.yml` como base para futura configuração de serviços locais
+## Desenvolvimento
 
-## Estrutura do projeto
+Python **3.14.4** (gerenciado pelo uv) e uv **0.12.7**. Docker é opcional.
 
-- `src/` (opcional/recomendado): diretório para o código da aplicação.
-- `main.py`: ponto de entrada da aplicação. Atualmente funciona como placeholder e deve ser substituído pela lógica principal do projeto.
-- `tests/`: diretório para testes automatizados.
-- `pyproject.toml`: configuração do projeto, dependências e tarefas.
-- `Dockerfile`: definição da imagem para executar a aplicação em container.
-- `docker-compose.yml`: placeholder para orquestração local, a ser configurado conforme as necessidades de cada projeto.
+```bash
+uv sync --locked
+uv run --no-sync contract-analyzer --version
+uv run --no-sync ruff check .
+uv run --no-sync ruff format --check .
+uv build
+```
 
-## Pré-requisitos
+```bash
+docker compose config --quiet
+docker compose build
+docker compose run --rm bootstrap
+```
 
-- Python 3.13+ para execução local (`Dockerfile` usa Python 3.14 por padrão)
-- `uv` instalado
-- opcionalmente: Docker e Docker Compose
+O container executa apenas a identificação do pacote e encerra. Não publica
+porta nem inicia serviços fictícios. `.env.example` não exige segredos.
+A suíte de testes funcionais acompanhará a implementação; o CI atual verifica
+qualidade, build e instalação do wheel em ambiente isolado.
 
-> Para manter maior paridade entre o ambiente local e o container, prefira utilizar Python 3.14 durante o desenvolvimento.
+## Origem e próximos passos
 
-## Criando um projeto a partir do template
+- [RFC #62](https://github.com/campos-labs/project-hub/issues/62),
+  [ADR #110](https://github.com/campos-labs/project-hub/issues/110) e
+  [DESIGN aprovado](https://github.com/campos-labs/project-hub/pull/111).
+- [Bootstrap #1](https://github.com/campos-labs/contract-analyzer-enterprise/issues/1)
+  e [evolução 1.x #2](https://github.com/campos-labs/contract-analyzer-enterprise/issues/2).
+- Template [python-project-template](https://github.com/campos-labs/python-project-template),
+  referência gerada `251fdadf2368c3748e47c39b58f7fceda95a5c30`.
+- POC, spike, fixtures e evidências permanecem no
+  [project-hub](https://github.com/campos-labs/project-hub/tree/main/docs/rfcs/006-contract-analyser-enterprise/research).
+  Fixtures serão promovidas seletivamente junto aos primeiros consumidores e
+  testes; os scripts experimentais não são a aplicação.
 
-1. No GitHub, clique em **Use this template** e crie um novo repositório para o projeto.
+Fundação técnica, testes e fluxos funcionais serão entregues nas issues da v1.0.
+MCP, conectores e RAG histórico permanecem na Epic, sem antecipação de escopo.
 
-2. Clone o novo repositório:
-
-   ```bash
-   git clone <url-do-novo-repositorio>
-   cd <nome-do-repositorio>
+[Governança](https://github.com/campos-labs/.github/blob/main/CONTRIBUTING.md) ·
+[Segurança](https://github.com/campos-labs/.github/blob/main/SECURITY.md) ·
+[MIT](LICENSE)
