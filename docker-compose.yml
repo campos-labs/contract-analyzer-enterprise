@@ -1,5 +1,9 @@
 services:
-  bootstrap:
-    build: .
-    command: ["contract-analyzer", "--version"]
-    network_mode: none
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8000:8000"

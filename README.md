@@ -1,39 +1,120 @@
 # Contract Analyzer Enterprise
 
-Base do produto para revisão rastreável de contratos B2B. A arquitetura da
-v1.0 está em [DESIGN.md](DESIGN.md); o motor de revisão ainda será implementado.
+Projeto para revisão rastreável de contratos B2B com decisões humanas. Atualmente, disponibiliza uma API FastAPI com uma rota de verificação de funcionamento.
 
-## Disponível
+## Pré-requisitos
 
-Pacote instalável, CLI de identificação/ajuda, ferramentas de qualidade e imagem
-Docker para verificar o empacotamento. Não há API, portal, análise DOCX, Writer,
-fila ou chamadas ao LLM implementados neste bootstrap. `0.0.0` identifica esta
-base de desenvolvimento; não existe release ou protótipo publicado.
+- Python 3.14 e [uv](https://docs.astral.sh/uv/) para execução local. O arquivo `.python-version` fixa a versão 3.14.4.
+- Docker e Docker Compose para execução em container.
 
-## Desenvolvimento
+## Instalação local
 
-Python **3.14.4** (gerenciado pelo uv) e uv **0.12.7**. Docker é opcional.
+Na raiz do projeto, instale as dependências e crie o ambiente virtual:
 
 ```bash
 uv sync --locked
-uv run --no-sync contract-analyzer --version
-uv run --no-sync ruff check .
-uv run --no-sync ruff format --check .
-uv build
 ```
+
+O comando instala o pacote da aplicação em modo editável e as dependências de desenvolvimento. A instalação usa o backend Hatchling e permite importar o pacote sem definir `PYTHONPATH`.
+
+Para conferir se o arquivo de lock está atualizado em relação ao `pyproject.toml`:
 
 ```bash
-docker compose config --quiet
-docker compose build
-docker compose run --rm bootstrap
+uv lock --check
 ```
 
-O container executa apenas a identificação do pacote e encerra. Não publica
-porta nem inicia serviços fictícios. `.env.example` não exige segredos.
-A suíte de testes funcionais acompanhará a implementação; o CI atual verifica
-qualidade, build e instalação do wheel em ambiente isolado.
+Para gerar a wheel e o sdist em `dist/`:
 
-## Origem e próximos passos
+```bash
+uv build --no-sources
+```
+
+## Configuração
+
+Para usar o Docker Compose, crie o arquivo local de configuração a partir do exemplo:
+
+```bash
+cp .env.example .env
+```
+
+`APP_LOG_LEVEL` controla o nível de log da aplicação. Os valores aceitos são `DEBUG`, `INFO`, `WARNING` e `ERROR`; o padrão é `INFO`. Um valor inválido impede a inicialização. O nível configurado não altera os logs do Uvicorn. O arquivo `.env` é local e não deve ser versionado.
+
+O Compose passa as variáveis de `.env` ao container. Na execução local, o código não carrega esse arquivo automaticamente: defina as variáveis no ambiente do processo, quando necessário.
+
+## Execução local
+
+Na raiz do projeto, inicie a aplicação:
+
+```bash
+uv run python main.py
+```
+
+Para escolher o nível de log localmente:
+
+```bash
+APP_LOG_LEVEL=DEBUG uv run python main.py
+```
+
+A execução local escuta apenas em `127.0.0.1:8000`. A documentação interativa do FastAPI estará em `http://127.0.0.1:8000/docs`.
+
+## Execução com Docker Compose
+
+Na raiz do projeto, construa a imagem e inicie o container:
+
+```bash
+docker compose up --build
+```
+
+O container executa a aplicação instalada com Uvicorn em `0.0.0.0:8000`. O Compose publica a porta 8000 apenas em `127.0.0.1` no host. Para encerrar, use `Ctrl+C` e execute:
+
+```bash
+docker compose down
+```
+
+Para consultar os logs da aplicação:
+
+```bash
+docker compose logs -f app
+```
+
+Após alterar `.env`, recrie o container para aplicar os novos valores:
+
+```bash
+docker compose up -d --force-recreate
+```
+
+## Verificação da API
+
+Com a aplicação em execução, consulte a rota de saúde:
+
+```bash
+curl http://127.0.0.1:8000/healthz
+```
+
+A resposta esperada é `{"status":"ok"}`, com status HTTP 200. A rota verifica a resposta do processo HTTP; ela não consulta serviços externos.
+
+## Testes e lint
+
+```bash
+uv run task test
+```
+
+A tarefa executa o lint e os testes com cobertura, gerando um relatório em `htmlcov/index.html`. Os testes verificam a rota de saúde e a configuração do nível de log. Para executar apenas o lint:
+
+```bash
+uv run task lint
+```
+
+## Integração contínua
+
+O workflow `CI` do GitHub Actions executa em pull requests para `main`, em pushes na `main` e manualmente pela aba Actions.
+
+- **quality:** instala o Python definido em `.python-version`, o pacote e as dependências com `uv sync --locked --dev`, verifica a formatação, executa `task test` e constrói as distribuições Python. Também instala a wheel em ambiente isolado e importa a aplicação fora do checkout, sem `PYTHONPATH` e com configuração inválida para verificar que a importação não inicializa o serviço. O nome corresponde ao check exigido pela regra de proteção da branch `main`.
+- **Docker e health check:** utiliza `.env.example`, valida o Compose, constrói e inicia o container e verifica a resposta de `GET /healthz` pela porta publicada no host.
+
+## Origem e arquitetura
+
+A arquitetura da v1.0 está em [DESIGN.md](DESIGN.md).
 
 - [RFC #62](https://github.com/campos-labs/project-hub/issues/62),
   [ADR #110](https://github.com/campos-labs/project-hub/issues/110) e
@@ -46,9 +127,6 @@ qualidade, build e instalação do wheel em ambiente isolado.
   [project-hub](https://github.com/campos-labs/project-hub/tree/6c301455fce7a182a044ea5f44bba88e8f6731c2/docs/rfcs/006-contract-analyser-enterprise/research).
   Fixtures serão promovidas seletivamente junto aos primeiros consumidores e
   testes; os scripts experimentais não são a aplicação.
-
-Fundação técnica, testes e fluxos funcionais serão entregues nas issues da v1.0.
-MCP, conectores e RAG histórico permanecem na Epic, sem antecipação de escopo.
 
 [Governança](https://github.com/campos-labs/.github/blob/main/CONTRIBUTING.md) ·
 [Segurança](https://github.com/campos-labs/.github/blob/main/SECURITY.md) ·

@@ -1,9 +1,38 @@
-.git
-.venv
-.smoke
-__pycache__
-.ruff_cache
-dist
+# Ambiente virtual local
+.venv/
+.smoke/
+venv/
+
+# Git e configurações de desenvolvimento
+.git/
+.github/
+.gitignore
+.vscode/
+.idea/
+.agents/
+.codex/
+.aws/
+
+# Arquivos de ambiente e segredos locais
 .env
 .env.*
-tests
+
+# Cache e arquivos gerados pelo Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Resultados de testes e builds
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+build/
+dist/
+*.egg-info/
+
+# Arquivos que não são necessários à aplicação
+tests/
+docker-compose.yml
