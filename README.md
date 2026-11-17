@@ -98,3 +98,10 @@ A tarefa executa o lint e os testes com cobertura, gerando um relatório em `htm
 ```bash
 uv run task lint
 ```
+
+## Integração contínua
+
+O workflow `CI` do GitHub Actions executa em pull requests para `main`, em pushes na `main` e manualmente pela aba Actions.
+
+- **Lint e testes:** instala o Python definido em `.python-version` e as dependências com `uv sync --locked --dev`, verifica a formatação e executa `task test`.
+- **Docker e health check:** utiliza `.env.example`, valida o Compose, constrói e inicia o container e verifica a resposta de `GET /healthz` pela porta publicada no host.
