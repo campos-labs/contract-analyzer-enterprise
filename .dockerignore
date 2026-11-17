@@ -1,0 +1,37 @@
+# Ambiente virtual local
+.venv/
+venv/
+
+# Git e configurações de desenvolvimento
+.git/
+.github/
+.gitignore
+.vscode/
+.idea/
+.agents/
+.codex/
+.aws/
+
+# Arquivos de ambiente e segredos locais
+.env
+.env.*
+
+# Cache e arquivos gerados pelo Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Resultados de testes e builds
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+build/
+dist/
+*.egg-info/
+
+# Arquivos que não são necessários à aplicação
+tests/
+docker-compose.yml

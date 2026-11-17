@@ -2,6 +2,7 @@ FROM python:3.14-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_NO_DEV=1
@@ -17,7 +18,7 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project
 
-# Copia e instala o projeto
+# Copia o código e sincroniza as dependências de produção
 COPY . .
 
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -27,5 +28,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
-# Substitua main.py pelo ponto de entrada do projeto
+# Inicia a aplicação pelo ponto de entrada
 CMD ["uv", "run", "--no-sync", "python", "main.py"]
