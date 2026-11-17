@@ -65,7 +65,7 @@ jobs:
       - name: Verificar resposta de GET /healthz
         run: |
           healthz_status=$(curl --fail --silent --show-error \
-            --retry 15 --retry-connrefused --retry-delay 2 --max-time 5 \
+            --retry 15 --retry-all-errors --retry-delay 2 --max-time 5 \
             --write-out '%{http_code}' --output /tmp/healthz.json \
             http://127.0.0.1:8000/healthz)
           test "$healthz_status" = '200'
