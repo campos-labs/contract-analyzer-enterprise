@@ -1,31 +1,9 @@
-FROM python:3.14-slim-bookworm
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_NO_DEV=1
-
+FROM python:3.14.4-slim-bookworm
+COPY --from=ghcr.io/astral-sh/uv:0.12.7 /uv /uvx /bin/
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_LINK_MODE=copy
 WORKDIR /app
-
-# Instala o uv usando a imagem oficial
-COPY --from=ghcr.io/astral-sh/uv:0.12.5 /uv /uvx /bin/
-
-# Instala dependências em uma camada separada
-COPY pyproject.toml uv.lock ./
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-install-project
-
-# Copia e instala o projeto
-COPY . .
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-editable
-
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
+RUN uv sync --locked --no-dev --no-editable
 ENV PATH="/app/.venv/bin:$PATH"
-
-EXPOSE 8000
-
-# Substitua main.py pelo ponto de entrada do projeto
-CMD ["uv", "run", "--no-sync", "python", "main.py"]
+CMD ["contract-analyzer", "--help"]
