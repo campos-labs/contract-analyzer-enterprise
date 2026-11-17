@@ -1,4 +1,4 @@
-FROM python:3.14-slim-bookworm
+FROM python:3.14.4-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -10,10 +10,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Instala o uv usando a imagem oficial
-COPY --from=ghcr.io/astral-sh/uv:0.12.5 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /uvx /bin/
 
 # Instala dependências em uma camada separada
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock .python-version ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project

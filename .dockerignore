@@ -1,5 +1,6 @@
 # Ambiente virtual local
 .venv/
+.smoke/
 venv/
 
 # Git e configurações de desenvolvimento

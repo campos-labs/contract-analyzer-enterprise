@@ -3,7 +3,8 @@ name = "contract-analyzer-enterprise"
 version = "0.1.0"
 description = "Revisão rastreável de contratos B2B com decisões humanas e integridade DOCX."
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.14,<3.15"
+license = "MIT"
 dependencies = [
     "fastapi[standard]>=0.163.1",
     "pydantic-settings>=2.16.3",
