@@ -2,7 +2,6 @@ FROM python:3.14.4-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/src \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_NO_DEV=1
@@ -18,7 +17,7 @@ COPY pyproject.toml uv.lock .python-version ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project
 
-# Copia o código e sincroniza as dependências de produção
+# Copia o código e instala o pacote com as dependências de produção
 COPY . .
 
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -28,5 +27,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
-# Inicia a aplicação pelo ponto de entrada
-CMD ["uv", "run", "--no-sync", "python", "main.py"]
+# Inicia a aplicação instalada e recebe conexões pela rede do container
+CMD ["uvicorn", "contract_analyzer_enterprise.app:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -43,6 +43,18 @@ jobs:
       - name: Executar lint e testes com cobertura
         run: uv run --no-sync task test
 
+      - name: Construir distribuições Python
+        run: uv build --no-sources
+
+      - name: Instalar e importar wheel fora do checkout
+        run: |
+          uv venv "$RUNNER_TEMP/wheel-smoke"
+          uv pip install --python "$RUNNER_TEMP/wheel-smoke/bin/python" dist/*.whl
+          cd "$RUNNER_TEMP"
+          env -u PYTHONPATH APP_LOG_LEVEL=INVALID \
+            "$RUNNER_TEMP/wheel-smoke/bin/python" -I -c \
+            'from contract_analyzer_enterprise.app import app; print(app.title)'
+
   docker:
     name: Docker e health check
     runs-on: ubuntu-latest

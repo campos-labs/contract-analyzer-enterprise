@@ -4,7 +4,7 @@ Projeto para revisão rastreável de contratos B2B com decisões humanas. Atualm
 
 ## Pré-requisitos
 
-- Python 3.14 ou superior e [uv](https://docs.astral.sh/uv/) para execução local. O arquivo `.python-version` fixa a versão 3.14.4.
+- Python 3.14 e [uv](https://docs.astral.sh/uv/) para execução local. O arquivo `.python-version` fixa a versão 3.14.4.
 - Docker e Docker Compose para execução em container.
 
 ## Instalação local
@@ -15,12 +15,18 @@ Na raiz do projeto, instale as dependências e crie o ambiente virtual:
 uv sync --locked
 ```
 
-O comando também instala as dependências de desenvolvimento. O código em `src/` não é instalado como pacote.
+O comando instala o pacote da aplicação em modo editável e as dependências de desenvolvimento. A instalação usa o backend Hatchling e permite importar o pacote sem definir `PYTHONPATH`.
 
 Para conferir se o arquivo de lock está atualizado em relação ao `pyproject.toml`:
 
 ```bash
 uv lock --check
+```
+
+Para gerar a wheel e o sdist em `dist/`:
+
+```bash
+uv build --no-sources
 ```
 
 ## Configuração
@@ -37,19 +43,19 @@ O Compose passa as variáveis de `.env` ao container. Na execução local, o có
 
 ## Execução local
 
-Na raiz do projeto, disponibilize `src/` para importação e inicie a aplicação:
+Na raiz do projeto, inicie a aplicação:
 
 ```bash
-PYTHONPATH=src uv run python main.py
+uv run python main.py
 ```
 
 Para escolher o nível de log localmente:
 
 ```bash
-APP_LOG_LEVEL=DEBUG PYTHONPATH=src uv run python main.py
+APP_LOG_LEVEL=DEBUG uv run python main.py
 ```
 
-A API estará disponível em `http://127.0.0.1:8000`. A documentação interativa do FastAPI estará em `http://127.0.0.1:8000/docs`.
+A execução local escuta apenas em `127.0.0.1:8000`. A documentação interativa do FastAPI estará em `http://127.0.0.1:8000/docs`.
 
 ## Execução com Docker Compose
 
@@ -59,7 +65,7 @@ Na raiz do projeto, construa a imagem e inicie o container:
 docker compose up --build
 ```
 
-O Compose publica a porta 8000 apenas em `127.0.0.1` no host. Para encerrar, use `Ctrl+C` e execute:
+O container executa a aplicação instalada com Uvicorn em `0.0.0.0:8000`. O Compose publica a porta 8000 apenas em `127.0.0.1` no host. Para encerrar, use `Ctrl+C` e execute:
 
 ```bash
 docker compose down
@@ -103,7 +109,7 @@ uv run task lint
 
 O workflow `CI` do GitHub Actions executa em pull requests para `main`, em pushes na `main` e manualmente pela aba Actions.
 
-- **quality:** instala o Python definido em `.python-version` e as dependências com `uv sync --locked --dev`, verifica a formatação e executa `task test`. O nome corresponde ao check exigido pela regra de proteção da branch `main`.
+- **quality:** instala o Python definido em `.python-version`, o pacote e as dependências com `uv sync --locked --dev`, verifica a formatação, executa `task test` e constrói as distribuições Python. Também instala a wheel em ambiente isolado e importa a aplicação fora do checkout, sem `PYTHONPATH` e com configuração inválida para verificar que a importação não inicializa o serviço. O nome corresponde ao check exigido pela regra de proteção da branch `main`.
 - **Docker e health check:** utiliza `.env.example`, valida o Compose, constrói e inicia o container e verifica a resposta de `GET /healthz` pela porta publicada no host.
 
 ## Origem e arquitetura
