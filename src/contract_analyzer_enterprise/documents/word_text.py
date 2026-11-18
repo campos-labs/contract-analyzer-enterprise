@@ -1,7 +1,7 @@
 """WordprocessingML names and read-only text projection."""
 
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 
 from lxml import etree
@@ -78,6 +78,7 @@ RUN_TEXT = w_names('t delText tab br cr noBreakHyphen softHyphen')
 class _Projection:
     segments: list[TextSegment] = field(default_factory=list)
     offset: int = 0
+    complete: bool = True
 
     def append(self, text: str, path: str) -> None:
         if text:
@@ -89,7 +90,7 @@ class _Projection:
         return TextView(
             ''.join(segment.text for segment in self.segments),
             tuple(self.segments),
-            complete,
+            complete and self.complete,
         )
 
 
@@ -121,6 +122,7 @@ class ParagraphText:
     events: list[DocumentEvent]
     limitations: set[Limitation]
     complete: bool = True
+    run_limitation: Callable[[etree._Element], str | None] | None = None
     projections: dict[Projection, _Projection] = field(
         default_factory=lambda: {
             projection: _Projection() for projection in Projection
@@ -144,8 +146,13 @@ class ParagraphText:
             for p in (Projection.PROPOSED, Projection.BASELINE)
         )
 
-    def _gap(self, code: str, path: str) -> None:
-        self.complete = False
+    def _gap(
+        self, code: str, path: str, projection: Projection | None = None
+    ) -> None:
+        if projection is None:
+            self.complete = False
+        else:
+            self.projections[projection].complete = False
         self.limitations.add(Limitation(code, self.part, path))
         self.comments.gap()
 
@@ -244,6 +251,7 @@ class ParagraphText:
         *,
         revision: Projection | None = None,
     ) -> None:
+        start = self._offsets()
         for child, child_path in children(node, path):
             if child.tag in RUN_TEXT:
                 self._leaf(child, child_path, revision)
@@ -255,6 +263,12 @@ class ParagraphText:
                 self._gap('unsupported_move', child_path)
             elif child.tag not in HARMLESS_MARKERS:
                 self._gap('unsupported_run_content', child_path)
+        if (
+            self.run_limitation is not None
+            and self._offsets() != start
+            and (code := self.run_limitation(node))
+        ):
+            self._gap(code, path, revision)
 
     def _leaf(
         self,

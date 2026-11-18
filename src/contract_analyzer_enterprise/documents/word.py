@@ -28,6 +28,7 @@ from .word_text import (
     w,
     w_names,
 )
+from .word_visibility import StyleVisibility
 
 OUTLINE_BODY = 9
 CONTAINER_KINDS = {
@@ -156,6 +157,7 @@ def _related_tree(package: DocxPackage, kind: str) -> etree._Element | None:
 class _Map:
     package: DocxPackage
     styles: _Styles
+    visibility: StyleVisibility
     units: list[DocumentUnit] = field(default_factory=list)
     events: list[DocumentEvent] = field(default_factory=list)
     limitations: set[Limitation] = field(default_factory=set)
@@ -241,6 +243,7 @@ class _Map:
             self.events,
             self.limitations,
             complete=complete,
+            run_limitation=self.visibility.for_paragraph(node),
         ).read(node, path)
         if parent is None:
             if level is not None:
@@ -397,7 +400,12 @@ class _Map:
                 )
                 continue
             text, _baseline = ParagraphText(
-                part, '', CommentRanges(), [], self.limitations
+                part,
+                '',
+                CommentRanges(),
+                [],
+                self.limitations,
+                run_limitation=self.visibility.for_paragraph(child),
             ).read(child, child_path)
             paragraphs.append(text.text)
         return '\n'.join(paragraphs)
@@ -480,7 +488,10 @@ def _is_merged(properties: etree._Element) -> bool:
 def map_document(
     package: DocxPackage, revision: DocumentRevision
 ) -> DocumentMap:
-    state = _Map(package, _Styles.from_tree(_related_tree(package, 'styles')))
+    styles = _related_tree(package, 'styles')
+    state = _Map(
+        package, _Styles.from_tree(styles), StyleVisibility.from_tree(styles)
+    )
     state.walk()
     return DocumentMap(
         revision=revision,

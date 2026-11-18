@@ -83,7 +83,15 @@ def test_reference_documents_are_preserved_and_inspection_is_repeatable(
 
 def test_reference_capture_contains_real_table_and_revision_events(tmp_path):
     document = inspect_primary(tmp_path, PRIMARY)
-    assert document.coverage_complete
+    # O comentário referencia CommentText, ausente na parte de estilos.
+    assert not document.coverage_complete
+    assert [(item.part, item.code) for item in document.limitations] == [
+        ('word/comments.xml', 'unresolved_text_visibility')
+    ]
+    assert all(
+        unit.proposed_view is None or unit.proposed_view.complete
+        for unit in document.units
+    )
     kinds = [unit.kind for unit in document.units]
     expected = {'heading': 9, 'table': 1, 'row': 3, 'cell': 12}
     assert {kind: kinds.count(kind) for kind in expected} == expected

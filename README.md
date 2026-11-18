@@ -120,6 +120,11 @@ limitação, preservando a ordem dos elementos físicos lidos.
 As âncoras usam offsets Unicode de base zero, com fim exclusivo.
 Cada intervalo vincula hash de revisão, parte, unidade e projeção aos
 segmentos XML correspondentes. Projeções incompletas recusam âncoras.
+Texto com `w:vanish` permanece no mapa. A projeção que o contém fica
+incompleta quando a propriedade está ativa ou a visibilidade herdada
+é incerta. O leitor considera os padrões do documento e os estilos
+aplicáveis de parágrafo, caractere e tabela. Uma desativação direta
+prevalece sobre a herança. A limitação indica o run e sua parte XML.
 A cobertura do relatório se refere à leitura. Alteração, reconciliação
 e clean ficam para os incrementos da jornada Word.
 
