@@ -17,6 +17,15 @@ from .model import (
 )
 
 W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+ALTERNATE_CONTENT = (
+    '{http://schemas.openxmlformats.org/markup-compatibility/2006}'
+    'AlternateContent'
+)
+ALTERNATE_PROPERTIES = 'unsupported_alternate_properties'
+
+
+def has_alternate_content(node: etree._Element) -> bool:
+    return next(node.iter(ALTERNATE_CONTENT), None) is not None
 
 
 def w(local: str) -> str:
@@ -72,6 +81,7 @@ RUN_SEPARATORS = {
     w('softHyphen'): '\u00ad',
 }
 RUN_TEXT = w_names('t delText tab br cr noBreakHyphen softHyphen')
+RENDERED_PAGE_BREAK = w('lastRenderedPageBreak')
 
 
 @dataclass(slots=True)
@@ -237,7 +247,14 @@ class ParagraphText:
             elif child.tag not in HARMLESS_MARKERS:
                 self._gap('unsupported_paragraph_content', child_path)
 
-    def _properties(self, node: etree._Element, path: str) -> None:
+    def _properties(
+        self,
+        node: etree._Element,
+        path: str,
+        projection: Projection | None = None,
+    ) -> None:
+        if has_alternate_content(node):
+            self._gap(ALTERNATE_PROPERTIES, path, projection)
         if any(
             child.tag in STRUCTURAL_REVISIONS
             for child in node.iterdescendants()
@@ -255,8 +272,11 @@ class ParagraphText:
         for child, child_path in children(node, path):
             if child.tag in RUN_TEXT:
                 self._leaf(child, child_path, revision)
+            elif child.tag == RENDERED_PAGE_BREAK and not len(child):
+                # Paginação calculada pelo Word não faz parte do texto.
+                continue
             elif child.tag == w('rPr'):
-                self._properties(child, child_path)
+                self._properties(child, child_path, revision)
             elif child.tag == w('commentReference'):
                 self._comment(child, child_path)
             elif child.tag in MOVES:
@@ -336,7 +356,13 @@ class ParagraphText:
 def _supports_text_revision(node: etree._Element) -> bool:
     """Support only direct inline run changes with understood children."""
     text_tag = w('delText') if node.tag == w('del') else w('t')
-    permissible = {text_tag, w('rPr'), w('br'), *RUN_SEPARATORS}
+    permissible = {
+        text_tag,
+        w('rPr'),
+        w('br'),
+        RENDERED_PAGE_BREAK,
+        *RUN_SEPARATORS,
+    }
     return bool(len(node)) and all(
         run.tag == w('r')
         and all(

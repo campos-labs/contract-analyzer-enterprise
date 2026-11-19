@@ -527,6 +527,8 @@ def read_package(
         BadZipFile,
         etree.XMLSyntaxError,
         EOFError,
+        NotImplementedError,
+        OverflowError,
         UnicodeError,
         ValueError,
         zlib.error,

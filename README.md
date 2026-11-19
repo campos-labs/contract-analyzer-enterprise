@@ -112,6 +112,9 @@ O mapa lê OOXML Transitional no corpo principal. Registra parágrafos,
 títulos por nível de estrutura, tabelas, linhas e células físicas.
 Mantém referências de numeração, espaços, tabs e quebras de texto.
 As projeções separam inserções e exclusões textuais simples.
+O marcador de paginação calculada `w:lastRenderedPageBreak` preserva
+o texto e seus offsets. O `w:br` de quebra de texto acrescenta uma quebra
+de linha.
 Comentários clássicos são eventos. Metadados modernos, movimentações,
 revisões estruturais e outras construções fora do suporte são
 inventariados. Tabelas mescladas e aninhadas recebem indicações de
@@ -123,8 +126,17 @@ segmentos XML correspondentes. Projeções incompletas recusam âncoras.
 Texto com `w:vanish` permanece no mapa. A projeção que o contém fica
 incompleta quando a propriedade está ativa ou a visibilidade herdada
 é incerta. O leitor considera os padrões do documento e os estilos
-aplicáveis de parágrafo, caractere e tabela. Uma desativação direta
-prevalece sobre a herança. A limitação indica o run e sua parte XML.
+aplicáveis de parágrafo, caractere e tabela. Uma desativação direta de
+`w:vanish` prevalece sobre a herança dessa propriedade.
+A limitação indica o run e sua parte XML.
+Propriedades em `mc:AlternateContent`, diretas ou herdadas de estilos
+e padrões aplicáveis, deixam as projeções afetadas incompletas.
+Essa incerteza persiste mesmo com `w:vanish` desativado diretamente.
+Revisões dentro de comentários têm limitação com localização XML.
+Campos complexos preservam o texto cacheado e bloqueiam âncoras por
+todo o intervalo afetado, incluindo parágrafos intermediários e campos
+aninhados. Delimitadores incompletos ou ambíguos ampliam a limitação
+ao trecho cuja interpretação permanece incerta.
 A cobertura do relatório se refere à leitura. Alteração, reconciliação
 e clean ficam para os incrementos da jornada Word.
 

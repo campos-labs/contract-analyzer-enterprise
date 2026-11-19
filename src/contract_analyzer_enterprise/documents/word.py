@@ -17,13 +17,16 @@ from .model import (
     UnitKind,
 )
 from .opc import DocxPackage
+from .word_fields import field_limitations
 from .word_text import (
+    ALTERNATE_PROPERTIES,
     HARMLESS_MARKERS,
     MOVES,
     STRUCTURAL_REVISIONS,
     CommentRanges,
     ParagraphText,
     children,
+    has_alternate_content,
     value,
     w,
     w_names,
@@ -163,6 +166,7 @@ class _Map:
     limitations: set[Limitation] = field(default_factory=set)
     comments: CommentRanges = field(default_factory=CommentRanges)
     headings: list[tuple[int, str]] = field(default_factory=list)
+    field_paragraphs: dict[etree._Element, str] = field(default_factory=dict)
 
     @property
     def part(self) -> str:
@@ -173,6 +177,7 @@ class _Map:
         if body is None:
             raise ValueError('A parte principal DOCX não contém w:body.')
         body_path = '/w:document[1]/w:body[1]'
+        self.field_paragraphs = field_limitations(body)
         # Revisões por intervalo podem atravessar parágrafos e tabelas.
         complete = not any(
             node.tag in UNSUPPORTED_RANGE_MARKERS for node in body.iter()
@@ -189,6 +194,10 @@ class _Map:
                     child, path, self.heading_id(), complete=complete
                 )
             elif child.tag == w('sectPr'):
+                if has_alternate_content(child):
+                    self.limitations.add(
+                        Limitation(ALTERNATE_PROPERTIES, self.part, path)
+                    )
                 if _has_structural_revision(child):
                     self.limitations.add(
                         Limitation(
@@ -215,6 +224,9 @@ class _Map:
         parent: str | None = None,
         complete: bool = True,
     ) -> None:
+        if code := self.field_paragraphs.get(node):
+            self.limitations.add(Limitation(code, self.part, path))
+            complete = False
         props = node.find(w('pPr'))
         style = value(props.find(w('pStyle'))) if props is not None else None
         inherited, style_complete = self.styles.for_id(
@@ -293,6 +305,11 @@ class _Map:
         allowed = CONTAINER_CHILDREN[node.tag]
         for child, child_path in block_children:
             if child.tag in CONTAINER_PROPERTIES:
+                if has_alternate_content(child):
+                    self.limitations.add(
+                        Limitation(ALTERNATE_PROPERTIES, self.part, child_path)
+                    )
+                    complete = False
                 if _has_structural_revision(child):
                     self.limitations.add(
                         Limitation(
@@ -399,14 +416,21 @@ class _Map:
                     Limitation('unsupported_comment_content', part, child_path)
                 )
                 continue
+            revisions: list[DocumentEvent] = []
             text, _baseline = ParagraphText(
                 part,
                 '',
                 CommentRanges(),
-                [],
+                revisions,
                 self.limitations,
                 run_limitation=self.visibility.for_paragraph(child),
             ).read(child, child_path)
+            self.limitations.update(
+                Limitation(
+                    'unsupported_comment_revision', part, revision.locator
+                )
+                for revision in revisions
+            )
             paragraphs.append(text.text)
         return '\n'.join(paragraphs)
 
