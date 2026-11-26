@@ -1,9 +1,16 @@
 from dataclasses import replace
 from hashlib import sha256
-from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
+from docx_helpers import (
+    ATTACHMENT,
+    NS,
+    PRIMARY,
+    W,
+    inspect_primary,
+    rewrite_body,
+)
 from lxml import etree
 
 from contract_analyzer_enterprise.documents.anchors import (
@@ -15,42 +22,6 @@ from contract_analyzer_enterprise.documents.model import Projection
 from contract_analyzer_enterprise.documents.opc import PackageError
 from contract_analyzer_enterprise.documents.service import inspect_documents
 from contract_analyzer_enterprise.documents.storage import LocalDocumentStorage
-
-FIXTURES = Path(__file__).parent / 'fixtures' / 'docx'
-PRIMARY = FIXTURES / 'contract_reference.docx'
-ATTACHMENT = FIXTURES / 'related_reference.docx'
-W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
-NS = {'w': W}
-
-
-def rewrite_body(path, body, *, styles='', defaults=''):
-    document = (
-        f'<w:document xmlns:w="{W}"><w:body>{body}</w:body></w:document>'
-    )
-    with (
-        ZipFile(ATTACHMENT) as source,
-        ZipFile(path, 'w', compression=ZIP_DEFLATED) as target,
-    ):
-        for entry in source.namelist():
-            payload = source.read(entry)
-            if entry == 'word/document.xml':
-                payload = document.encode()
-            elif entry == 'word/styles.xml':
-                payload = payload.replace(
-                    b'</w:styles>', styles.encode() + b'</w:styles>'
-                )
-                payload = payload.replace(
-                    b'</w:pPr></w:pPrDefault>',
-                    defaults.encode() + b'</w:pPr></w:pPrDefault>',
-                )
-            target.writestr(entry, payload)
-
-
-def inspect_primary(tmp_path, filename):
-    report = inspect_documents(
-        filename, (), LocalDocumentStorage(tmp_path / 'originals')
-    )
-    return report.documents[0].document
 
 
 def test_reference_documents_are_preserved_and_inspection_is_repeatable(

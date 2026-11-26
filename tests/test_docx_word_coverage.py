@@ -3,14 +3,14 @@
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
-from lxml import etree
-from test_document_inspection import (
+from docx_helpers import (
     NS,
     PRIMARY,
     W,
     inspect_primary,
     rewrite_body,
 )
+from lxml import etree
 
 from contract_analyzer_enterprise.documents.anchors import (
     AnchorError,

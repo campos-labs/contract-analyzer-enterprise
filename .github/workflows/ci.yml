@@ -46,14 +46,46 @@ jobs:
       - name: Construir distribuições Python
         run: uv build --no-sources
 
-      - name: Instalar e importar wheel fora do checkout
+      - name: Validar API e CLI da wheel fora do checkout
+        shell: bash
         run: |
-          uv venv "$RUNNER_TEMP/wheel-smoke"
-          uv pip install --python "$RUNNER_TEMP/wheel-smoke/bin/python" dist/*.whl
-          cd "$RUNNER_TEMP"
-          env -u PYTHONPATH APP_LOG_LEVEL=INVALID \
-            "$RUNNER_TEMP/wheel-smoke/bin/python" -I -c \
+          smoke_dir=$(mktemp -d "$RUNNER_TEMP/wheel-smoke.XXXXXX")
+          trap 'rm -rf "$smoke_dir"' EXIT
+          wheel_python="$smoke_dir/venv/bin/python"
+          fixtures="$GITHUB_WORKSPACE/tests/fixtures/docx"
+          primary="$fixtures/contract_reference.docx"
+          attachment="$fixtures/related_reference.docx"
+
+          uv venv "$smoke_dir/venv"
+          uv pip install --python "$wheel_python" dist/*.whl
+          cd "$smoke_dir"
+          env -u PYTHONPATH APP_LOG_LEVEL=INVALID "$wheel_python" -I -c \
             'from contract_analyzer_enterprise.app import app; print(app.title)'
+
+          env -u PYTHONPATH "$wheel_python" -I -m contract_analyzer_enterprise.documents \
+            "$primary" --anexo "$attachment" --storage store --output report.json
+
+          env -u PYTHONPATH "$wheel_python" -I - "$primary" "$attachment" <<'PY'
+          import json
+          import sys
+          from hashlib import sha256
+          from pathlib import Path
+
+          report = json.loads(Path('report.json').read_text(encoding='utf-8'))
+          documents = report['documents']
+          assert [item['role'] for item in documents] == ['primary', 'attachment']
+
+          for filename, item in zip(sys.argv[1:], documents, strict=True):
+              source = Path(filename)
+              expected = source.read_bytes()
+              digest = sha256(expected).hexdigest()
+              stored_as = f'originals/{digest}.docx'
+              assert item['document']['revision']['sha256'] == digest, source.name
+              assert item['stored_as'] == stored_as, source.name
+              stored = (Path('store') / stored_as).read_bytes()
+              assert sha256(stored).hexdigest() == digest, source.name
+              assert stored == expected, source.name
+          PY
 
   docker:
     name: Docker e health check
