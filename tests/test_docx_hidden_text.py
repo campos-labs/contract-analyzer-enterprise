@@ -3,7 +3,7 @@
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
-from test_document_inspection import inspect_primary, rewrite_body
+from docx_helpers import inspect_primary, rewrite_body
 
 from contract_analyzer_enterprise.documents.anchors import (
     AnchorError,

@@ -12,7 +12,8 @@ Projeto para revisão rastreável de contratos B2B com decisões humanas. A base
 Na raiz do projeto, instale as dependências e crie o ambiente virtual:
 
 ```bash
-uv sync --locked
+uv python install
+uv sync --locked --dev
 ```
 
 O comando instala o pacote da aplicação em modo editável e as dependências de desenvolvimento. A instalação usa o backend Hatchling e permite importar o pacote sem definir `PYTHONPATH`.
@@ -152,20 +153,35 @@ funciona offline.
 ## Testes e lint
 
 ```bash
-uv run task test
+uv run --no-sync ruff format --check .
+uv run --no-sync task test
 ```
 
-A tarefa executa o lint e os testes com cobertura, gerando um relatório em `htmlcov/index.html`. Os testes cobrem a fundação HTTP e a ingestão, projeções e âncoras DOCX. Para executar apenas o lint:
+A tarefa executa o lint e os testes sem depender de `.env` pessoal,
+credenciais ou serviços de negócio. A cobertura é informativa, sem
+percentual mínimo, e o relatório local fica em `htmlcov/index.html`.
+Os testes cobrem a fundação HTTP e a ingestão, projeções e âncoras DOCX.
+Para executar apenas o lint ou listar os testes coletados, use:
 
 ```bash
-uv run task lint
+uv run --no-sync task lint
+uv run --no-sync pytest --collect-only -q
 ```
 
 ## Integração contínua
 
 O workflow `CI` do GitHub Actions executa em pull requests para `main`, em pushes na `main` e manualmente pela aba Actions.
 
-- **quality:** instala o Python definido em `.python-version`, o pacote e as dependências com `uv sync --locked --dev`, verifica a formatação, executa `task test` e constrói as distribuições Python. Também instala a wheel em ambiente isolado e importa a aplicação fora do checkout, sem `PYTHONPATH` e com configuração inválida para verificar que a importação não inicializa o serviço. O nome corresponde ao check exigido pela regra de proteção da branch `main`.
+- **quality** instala o Python definido em `.python-version`, as dependências
+  com `uv sync --locked --dev`, verifica a formatação, executa `task test`
+  e constrói as distribuições com `uv build --no-sources`. Instala a wheel
+  em um ambiente isolado e, fora do checkout e sem `PYTHONPATH`, importa a
+  aplicação com `APP_LOG_LEVEL=INVALID` e executa
+  `python -I -m contract_analyzer_enterprise.documents`. O smoke usa
+  `contract_reference.docx` e `related_reference.docx` e confere os papéis
+  `primary` e `attachment` no relatório e os bytes e SHA-256 dos dois
+  originais. Relatório e armazenamento ficam em um diretório temporário
+  removido ao final. `quality` é o check exigido para a branch `main`.
 - **Docker e health check:** utiliza `.env.example`, valida o Compose, constrói e inicia o container e verifica a resposta de `GET /healthz` pela porta publicada no host.
 
 ## Origem e arquitetura

@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 import pytest
-from test_docx_package import make_parts, package_bytes
+from docx_helpers import make_parts, package_bytes
 
 from contract_analyzer_enterprise.documents.opc import (
     PackageError,

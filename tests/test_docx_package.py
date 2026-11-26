@@ -1,10 +1,10 @@
 """Exercise DOCX package validation with small, independent OPC documents."""
 
 import stat
-from io import BytesIO
-from zipfile import ZIP_STORED, ZipFile, ZipInfo
+from zipfile import ZipInfo
 
 import pytest
+from docx_helpers import MAIN, OFFICE_REL, REL, W, make_parts, package_bytes
 
 from contract_analyzer_enterprise.documents.opc import (
     ExternalRelationship,
@@ -13,45 +13,7 @@ from contract_analyzer_enterprise.documents.opc import (
     read_package,
 )
 
-W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
-OFFICE_REL = (
-    'http://schemas.openxmlformats.org/officeDocument/2006/relationships/'
-)
-REL = 'http://schemas.openxmlformats.org/package/2006/relationships'
-TYPES = 'http://schemas.openxmlformats.org/package/2006/content-types'
-MAIN = 'word/document.xml'
 PAYLOAD = b'opaque-media-used-to-trigger-crc'
-
-
-def make_parts(main: str = MAIN) -> dict[str, str | bytes]:
-    return {
-        '[Content_Types].xml': (
-            f'<Types xmlns="{TYPES}">'
-            '<Default Extension="xml" ContentType="application/xml"/>'
-            '<Default Extension="bin" ContentType="application/octet-stream"/>'
-            '<Default Extension="rels" ContentType="application/'
-            'vnd.openxmlformats-package.relationships+xml"/>'
-            f'<Override PartName="/{main}" ContentType="application/'
-            'vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-            '</Types>'
-        ),
-        '_rels/.rels': (
-            f'<Relationships xmlns="{REL}">'
-            f'<Relationship Id="rId1" Type="{OFFICE_REL}officeDocument" '
-            f'Target="{main}"/></Relationships>'
-        ),
-        main: (
-            f'<w:document xmlns:w="{W}"><w:body><w:p/></w:body></w:document>'
-        ),
-    }
-
-
-def package_bytes(parts: dict[str | ZipInfo, str | bytes]) -> bytes:
-    buffer = BytesIO()
-    with ZipFile(buffer, mode='w', compression=ZIP_STORED) as archive:
-        for name, item in parts.items():
-            archive.writestr(name, item)
-    return buffer.getvalue()
 
 
 def test_opc_discovers_relocated_xml_parts_and_keeps_external_links_inert():
