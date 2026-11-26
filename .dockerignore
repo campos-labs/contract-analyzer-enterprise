@@ -1,6 +1,7 @@
 # Ambiente virtual local
 .venv/
 .smoke/
+.docx-inspection/
 venv/
 
 # Git e configurações de desenvolvimento

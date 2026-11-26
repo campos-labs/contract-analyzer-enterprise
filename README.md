@@ -1,6 +1,6 @@
 # Contract Analyzer Enterprise
 
-Projeto para revisão rastreável de contratos B2B com decisões humanas. Atualmente, disponibiliza uma API FastAPI com uma rota de verificação de funcionamento.
+Projeto para revisão rastreável de contratos B2B com decisões humanas. A base atual oferece inspeção local de DOCX e uma rota de saúde da API.
 
 ## Pré-requisitos
 
@@ -93,13 +93,69 @@ curl http://127.0.0.1:8000/healthz
 
 A resposta esperada é `{"status":"ok"}`, com status HTTP 200. A rota verifica a resposta do processo HTTP; ela não consulta serviços externos.
 
+## Inspeção local de DOCX
+
+Na raiz do projeto, execute com as amostras sintéticas:
+
+```bash
+uv run python -m contract_analyzer_enterprise.documents tests/fixtures/docx/contract_reference.docx --anexo tests/fixtures/docx/related_reference.docx --storage .docx-inspection --output .docx-inspection/mapa.json
+```
+
+`--anexo` pode ser repetido. O relatório JSON registra papéis, revisões,
+unidades, projeções, eventos e limitações. Os originais validados ficam
+em `originals/<sha256>.docx` dentro do armazenamento indicado.
+Cada objeto é publicado sem substituir um arquivo existente. Escolha
+um caminho novo para cada relatório e use um volume local com suporte a
+hard links. A pasta `.docx-inspection/` é ignorada pelo Git.
+
+O mapa lê OOXML Transitional no corpo principal. Registra parágrafos,
+títulos por nível de estrutura, tabelas, linhas e células físicas.
+Mantém referências de numeração, espaços, tabs e quebras de texto.
+As projeções separam inserções e exclusões textuais simples.
+O marcador de paginação calculada `w:lastRenderedPageBreak` preserva
+o texto e seus offsets. O `w:br` de quebra de texto acrescenta uma quebra
+de linha.
+Comentários clássicos são eventos. Metadados modernos, movimentações,
+revisões estruturais e outras construções fora do suporte são
+inventariados. Tabelas mescladas e aninhadas recebem indicações de
+limitação, preservando a ordem dos elementos físicos lidos.
+
+As âncoras usam offsets Unicode de base zero, com fim exclusivo.
+Cada intervalo vincula hash de revisão, parte, unidade e projeção aos
+segmentos XML correspondentes. Projeções incompletas recusam âncoras.
+Texto com `w:vanish` permanece no mapa. A projeção que o contém fica
+incompleta quando a propriedade está ativa ou a visibilidade herdada
+é incerta. O leitor considera os padrões do documento e os estilos
+aplicáveis de parágrafo, caractere e tabela. Uma desativação direta de
+`w:vanish` prevalece sobre a herança dessa propriedade.
+A limitação indica o run e sua parte XML.
+Propriedades em `mc:AlternateContent`, diretas ou herdadas de estilos
+e padrões aplicáveis, deixam as projeções afetadas incompletas.
+Essa incerteza persiste mesmo com `w:vanish` desativado diretamente.
+Revisões dentro de comentários têm limitação com localização XML.
+Campos complexos preservam o texto cacheado e bloqueiam âncoras por
+todo o intervalo afetado, incluindo parágrafos intermediários e campos
+aninhados. Delimitadores incompletos ou ambíguos ampliam a limitação
+ao trecho cuja interpretação permanece incerta.
+A cobertura do relatório se refere à leitura. Alteração, reconciliação
+e clean ficam para os incrementos da jornada Word.
+
+Os limites iniciais são 8 anexos, 32 MiB de entrada por DOCX, 64 MiB
+de entrada somada, 2.048 entradas ZIP por pacote e até 250 mil nós
+XML por inspeção. O pacote tem teto de 64 MiB expandidos e 32 MiB
+por entrada. A ancoragem de comentários tem limite de 32 intervalos
+simultâneos e 50 mil trechos projetados por documento. Conteúdo ativo,
+como macros e objetos incorporados, é recusado. Links externos HTTP,
+HTTPS e mailto são inventariados sem expor seus destinos. O comando
+funciona offline.
+
 ## Testes e lint
 
 ```bash
 uv run task test
 ```
 
-A tarefa executa o lint e os testes com cobertura, gerando um relatório em `htmlcov/index.html`. Os testes verificam a rota de saúde e a configuração do nível de log. Para executar apenas o lint:
+A tarefa executa o lint e os testes com cobertura, gerando um relatório em `htmlcov/index.html`. Os testes cobrem a fundação HTTP e a ingestão, projeções e âncoras DOCX. Para executar apenas o lint:
 
 ```bash
 uv run task lint
@@ -125,8 +181,7 @@ A arquitetura da v1.0 está em [DESIGN.md](DESIGN.md).
   referência gerada `251fdadf2368c3748e47c39b58f7fceda95a5c30`.
 - POC, spike, fixtures e evidências permanecem no
   [project-hub](https://github.com/campos-labs/project-hub/tree/6c301455fce7a182a044ea5f44bba88e8f6731c2/docs/rfcs/006-contract-analyser-enterprise/research).
-  Fixtures serão promovidas seletivamente junto aos primeiros consumidores e
-  testes; os scripts experimentais não são a aplicação.
+  A origem dos DOCX reutilizados está em [testes de inspeção](tests/fixtures/docx/README.md).
 
 [Governança](https://github.com/campos-labs/.github/blob/main/CONTRIBUTING.md) ·
 [Segurança](https://github.com/campos-labs/.github/blob/main/SECURITY.md) ·
